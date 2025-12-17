@@ -1,0 +1,33 @@
+{
+  "name": "salesforce-automation-framework",
+  "version": "1.0.0",
+  "description": "Playwright-based automation framework for Salesforce Lightning Experience testing",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:scenario1": "npx playwright test scenario-1-opportunity.spec.ts",
+    "test:scenario2": "npx playwright test scenario-2-readonly-user.spec.ts",
+    "report": "npx playwright show-report",
+    "deploy": "bash scripts/deploy-config.sh",
+    "deploy:check": "sf project deploy start --dry-run --source-dir force-app/main/default"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "fsevents": "^2.3.2",
+    "playwright": "^1.57.0",
+    "playwright-core": "^1.57.0",
+    "undici-types": "^7.16.0"
+  }
+}
