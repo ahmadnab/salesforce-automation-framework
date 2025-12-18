@@ -1,8 +1,4 @@
 
-# Environment
-.env
-.env.local
-
 # Playwright
 node_modules/
 /test-results/
