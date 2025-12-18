@@ -1,263 +1,113 @@
 # Salesforce Automation Framework
 
-A Playwright-based automation framework for Salesforce Lightning Experience testing.
-
-## Overview
-
-This framework provides automated UI testing capabilities for Salesforce Lightning, with specific focus on:
-- Account and Opportunity management
-- User permission validation
-- Custom field testing
+Playwright-based automation framework for Salesforce Lightning Experience testing.
 
 ## Prerequisites
 
-- **Node.js** v18 or higher
-- **npm** v8 or higher
-- **Salesforce CLI (sf)** v2.x or higher
-- Access to a Salesforce scratch org or sandbox
+- Node.js v18+
+- Salesforce CLI (`sf`) v2+
+- Access to a Salesforce org
 
-## Setup Instructions
-
-### 1. Clone and Install Dependencies
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd salesforce-automation-framework
-
-# Install Node.js dependencies
+# Install dependencies
 npm install
-
-# Install Playwright browsers
 npx playwright install chromium
+
+# Authenticate with Salesforce
+sf org login web --alias myOrg
+
+# Deploy Salesforce configuration
+./scripts/deploy-config.sh myOrg
+
+# Run tests
+npm test
 ```
 
-### 2. Configure Salesforce Org
+## Project Structure
+
+```
+salesforce-automation-framework/
+├── config/environment.ts      # Configuration
+├── force-app/main/default/    # Salesforce metadata
+│   ├── objects/               # Custom fields
+│   └── permissionsets/        # Permission sets
+├── tests/
+│   ├── fixtures/              # Playwright fixtures  
+│   ├── pages/                 # Page Object Model
+│   ├── utils/                 # SF utilities
+│   └── *.spec.ts              # Test specs
+└── scripts/deploy-config.sh   # Deployment script
+```
+
+## Authentication
+
+Uses SF CLI for authentication (no password/security token needed):
 
 ```bash
-# Authenticate with Salesforce (opens browser for OAuth)
-sf org login web --alias myOrg --instance-url https://login.salesforce.com
+# Login to org (opens browser)
+sf org login web --alias myOrg
 
-# For scratch orgs or sandboxes:
+# For scratch orgs / sandboxes:
 sf org login web --alias myOrg --instance-url https://test.salesforce.com
 ```
 
-### 3. Deploy Salesforce Configuration
+The framework uses `sf org display` to get the access token, then `frontdoor.jsp` to establish browser session.
 
-```bash
-# Run the deployment script
-chmod +x scripts/deploy-config.sh
-./scripts/deploy-config.sh myOrg
-```
+## Test Scenarios
 
-This deploys:
-- `Quantity__c` custom field on Opportunity
-- `OpportunityReadOnly` permission set
+### Scenario 1: Opportunity Creation
+1. Create Account "A1" if not exists
+2. Create Opportunity with custom `Quantity__c` field
+3. Validate Opportunity details on record page
+4. Validate Opportunity appears in Account related list
 
-### 4. Set Environment Variables (Optional)
-
-Create a `.env` file or set environment variables:
-
-```bash
-export SF_INSTANCE_URL="https://your-org.my.salesforce.com"
-export SF_USERNAME="your.username@example.com"
-export SF_PASSWORD="YourPassword"
-export SF_API_VERSION="60.0"
-```
-
-If not set, defaults in `config/environment.ts` are used.
+### Scenario 2: Read-Only User Access
+1. Create Standard Platform User
+2. Assign `OpportunityReadOnly` permission set
+3. Validate user can view Opportunities
+4. Validate user cannot edit Opportunities
 
 ## Running Tests
 
 ```bash
-# Run all tests
-npm test
-
-# Run specific scenario
-npx playwright test scenario-1-opportunity.spec.ts
-npx playwright test scenario-2-readonly-user.spec.ts
-
-# Run with UI mode (debugging)
-npx playwright test --ui
-
-# Run with headed browser
-npx playwright test --headed
-
-# Generate HTML report
-npx playwright show-report
+npm test                                    # All tests
+npx playwright test scenario-1             # Specific scenario
+npx playwright test --headed               # With browser visible
+npx playwright test --ui                   # Debug mode
+npx playwright show-report                 # View HTML report
 ```
 
-## Framework Architecture
+## Salesforce Configuration
 
-```
-salesforce-automation-framework/
-├── config/
-│   └── environment.ts        # Environment configuration
-├── force-app/
-│   └── main/default/
-│       ├── objects/          # Custom field metadata
-│       └── permissionsets/   # Permission set metadata
-├── tests/
-│   ├── fixtures/             # Playwright fixtures
-│   ├── pages/                # Page Object Model classes
-│   ├── utils/                # Salesforce utilities
-│   └── *.spec.ts            # Test specifications
-├── scripts/
-│   └── deploy-config.sh     # Configuration deployment script
-└── playwright.config.ts     # Playwright configuration
-```
+Deploys via `scripts/deploy-config.sh`:
+- `Quantity__c` - Number field on Opportunity
+- `OpportunityReadOnly` - Permission set for read-only access
 
-### Page Object Model
+## Framework Features
 
-The framework uses the Page Object Model pattern:
-
-- **BasePage**: Common Salesforce navigation and login
-- **AccountPage**: Account object operations
-- **OpportunityPage**: Opportunity CRUD with custom fields
-- **UserPage**: User management and permissions
-
-### Salesforce Utilities
-
-- **SalesforceUtils**: Handles Lightning-specific challenges
-  - Spinner/loading state management
-  - Toast message capture
-  - Dynamic field filling
-  - Combobox and lookup handling
-
-- **SalesforceApiUtils**: REST API operations
-  - SOAP authentication (MFA bypass)
-  - Frontdoor.jsp session management
-  - SOQL queries
-  - Record CRUD operations
-
-## Test Scenarios
-
-### Scenario 1: Opportunity Creation and Validation
-
-1. Creates Account "A1" if not exists
-2. Creates Opportunity with all fields including custom `Quantity` field
-3. Validates field values on Opportunity detail page
-4. Validates Opportunity appears in Account's related list
-
-### Scenario 2: Read-Only Platform User Access
-
-1. Creates Standard Platform User
-2. Assigns read-only Opportunity access
-3. Validates user can view Opportunities
-4. Validates user cannot edit Opportunities
-
-## Salesforce-Specific Challenges Handled
-
-### 1. Lightning UI Behavior
-- Extended timeouts for component loading
-- Multiple spinner type detection
-- Dynamic content waiting strategies
-
-### 2. Dynamic DOM Elements
-- Flexible selectors for Lightning components
-- Shadow DOM traversal where needed
-- Component-aware element location
-
-### 3. Asynchronous Page Behavior
-- Network idle detection
-- Component render waiting
-- Aura framework event handling
-
-### 4. Toast Messages
-- Auto-capture and validation
-- Type verification (success/error/warning)
-- Auto-dismiss handling
-
-### 5. Authentication
-- SOAP API authentication (bypasses MFA)
-- Frontdoor.jsp session establishment
-- Login-As functionality for user testing
-
-## Configuration Persistence
-
-All Salesforce configuration is stored as metadata in `force-app/`:
-
-```
-force-app/main/default/
-├── objects/
-│   └── Opportunity/
-│       └── fields/
-│           └── Quantity__c.field-meta.xml
-└── permissionsets/
-    └── OpportunityReadOnly.permissionset-meta.xml
-```
-
-When a new scratch org is created, run:
-```bash
-./scripts/deploy-config.sh <org-alias>
-```
-
-## Known Limitations
-
-1. **MFA Required Orgs**: The frontdoor.jsp approach may not work if SOAP API access is restricted
-2. **Record Type Dependencies**: Tests assume default record types; additional configuration needed for custom types
-3. **Namespace Prefix**: For managed packages, field API names need adjustment
-4. **Parallel Execution**: Tests run sequentially to maintain data dependencies
-
-## Future Improvements
-
-With more time, the following enhancements could be made:
-
-1. **Authentication**
-   - OAuth 2.0 JWT Bearer flow for service-to-service auth
-   - Token caching to reduce login overhead
-
-2. **Test Data Management**
-   - Factory pattern for test data generation
-   - Automatic cleanup with test teardown hooks
-   - Data builder classes for complex records
-
-3. **Framework Enhancements**
-   - Custom reporters for Salesforce context
-   - Screenshot comparison for UI validation
-   - Performance metrics collection
-
-4. **CI/CD Integration**
-   - GitHub Actions workflow
-   - Scratch org pooling
-   - Parallel test execution across org pools
-
-5. **Additional Scenarios**
-   - Approval process testing
-   - Flow automation validation
-   - Bulk data operations
+- **Page Object Model**: `BasePage`, `AccountPage`, `OpportunityPage`, `UserPage`
+- **Lightning Utilities**: Spinner handling, toast capture, dynamic fields
+- **API Utilities**: SOQL queries, record CRUD, user management
+- **MFA Bypass**: Uses SF CLI token + frontdoor.jsp
 
 ## Troubleshooting
 
-### Common Issues
-
-**Login Failures**
 ```bash
-# Re-authenticate the org
+# Re-authenticate
 sf org login web --alias myOrg
-```
 
-**Deployment Failures**
-```bash
 # Check org connection
-sf org display --target-org myOrg
+sf org display
 
-# Verify metadata format
+# Verify metadata deployment
 sf project deploy start --dry-run --source-dir force-app/main/default
 ```
 
-**Test Timeouts**
-- Increase timeouts in `playwright.config.ts`
-- Check network connectivity to Salesforce
-- Verify org is responsive
+## Environment Variables (Optional)
 
-## Contributing
-
-1. Create feature branch
-2. Make changes with proper tests
-3. Ensure all tests pass
-4. Submit pull request
-
-## License
-
-MIT License - See LICENSE file for details
+```bash
+SF_INSTANCE_URL=https://your-org.my.salesforce.com
+SF_API_VERSION=60.0
+```
